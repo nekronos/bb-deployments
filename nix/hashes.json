@@ -1,0 +1,8 @@
+{
+  "bb-autoscaler": "sha256-uRgk5v0rlLKb4aI+YtZJwd0FwbXUya4RbNXrpld74aQ=",
+  "bb-browser": "sha256-ZGxagRTVLGIkGMAOZDPo4kolbj6kOlIAW4aedrd0M/0=",
+  "bb-clientd": "sha256-dsF6ib515+mubs5CcNWMprJ39WUt7TYR3A3utSs2M6Y=",
+  "bb-remote-execution": "sha256-Dy0AUJEfZK8A/2ThlqLiaeDW4YhdMo6S9TLlZS9c6RU=",
+  "bb-storage": "sha256-ubyyd9bpYLA6heCk1M6QQglBVTzjdPWGMDnTl5Hz9Tc=",
+  "go": null
+}
