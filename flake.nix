@@ -3,7 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-parts.url = "github:hercules-ci/flake-parts";
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
     systems.url = "github:nix-systems/default";
 
     # Pinned by MODULE.bazel; nix/update.sh keeps these in sync.
@@ -17,7 +20,7 @@
     };
 
     # Not in MODULE.bazel: newest commit whose go.mod requires a bb-storage
-    # no newer than the pinned one.
+    # and bb-remote-execution no newer than the pinned ones.
     bb-clientd = {
       url = "github:buildbarn/bb-clientd/ffb681565e116c8e3a713dbf1b20ee9e45429f19";
       flake = false;
@@ -37,11 +40,12 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
       imports = [
+        flake-parts.flakeModules.easyOverlay
         ./nix/toolchain.nix
         ./nix/packages.nix
         ./nix/checks.nix
         ./nix/devshell.nix
-        ./nix/overlay.nix
+        ./nix/formatter.nix
       ];
     };
 }

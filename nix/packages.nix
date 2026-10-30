@@ -27,7 +27,7 @@ let
       # bb_runner_installer embeds bb_runner, which Bazel copies in. Not
       # preBuild: the go-modules derivation inherits it and has no vendor/.
       postConfigure = ''
-        go build -ldflags="-s -w" -o cmd/bb_runner_installer/bb_runner ./cmd/bb_runner
+        go build -ldflags="''${ldflags[*]}" -o cmd/bb_runner_installer/bb_runner ./cmd/bb_runner
       '';
     };
     bb-clientd.bins = [ "bb_clientd" ];
@@ -44,8 +44,11 @@ let
       "${inputs.bb-storage}/patches/org_golang_google_genproto_googleapis_bytestream/service-registrar.diff";
     "golang.org/x/sys" = ../patches/org_golang_x_sys/o-search.diff;
   };
+  # A module is absent from vendor/ when the repository does not use it;
+  # modules.txt asserts vendor/ is populated at all (not proxyVendor).
   patchVendor = lib.concatStrings (
-    lib.mapAttrsToList (mod: patch: ''
+    [ "test -f vendor/modules.txt\n" ]
+    ++ lib.mapAttrsToList (mod: patch: ''
       if [ -d vendor/${mod} ]; then
         chmod -R u+w vendor/${mod}
         patch -d vendor/${mod} -p0 < ${patch}
@@ -55,10 +58,16 @@ let
 
   # Maintained by nix/update.sh.
   hashes = lib.importJSON ./hashes.json;
+
+  # 20260906092937 -> 2026-09-06
+  isoDate = d: "${lib.substring 0 4 d}-${lib.substring 4 2 d}-${lib.substring 6 2 d}";
 in
 {
+  _module.args.buildbarnRepos = repos;
+
   perSystem =
     {
+      config,
       pkgs,
       buildGoModule,
       ...
@@ -66,35 +75,32 @@ in
     let
       mkBuildbarn =
         pname:
-        { bins, ... }@args:
+        {
+          bins,
+          postConfigure ? "",
+        }:
         let
           src = inputs.${pname};
         in
-        buildGoModule (
-          {
-            inherit pname src;
-            version = "0-unstable-${lib.substring 0 8 src.lastModifiedDate}";
-            vendorHash = hashes.${pname};
-            subPackages = map (b: "cmd/${b}") bins;
-            postConfigure = patchVendor + args.postConfigure or "";
-            env.CGO_ENABLED = 0;
-            ldflags = [
-              "-s"
-              "-w"
-            ];
-            # Tests need the gomock mocks Bazel generates.
-            doCheck = false;
-            meta = {
-              homepage = "https://github.com/buildbarn/${pname}";
-              license = lib.licenses.asl20;
-              platforms = lib.platforms.linux ++ lib.platforms.darwin;
-            };
-          }
-          // removeAttrs args [
-            "bins"
-            "postConfigure"
-          ]
-        );
+        buildGoModule {
+          inherit pname src;
+          version = "0-unstable-${isoDate src.lastModifiedDate}";
+          vendorHash = hashes.${pname};
+          subPackages = map (b: "cmd/${b}") bins;
+          postConfigure = patchVendor + postConfigure;
+          env.CGO_ENABLED = 0;
+          ldflags = [
+            "-s"
+            "-w"
+          ];
+          # Tests need the gomock mocks Bazel generates.
+          doCheck = false;
+          meta = {
+            homepage = "https://github.com/buildbarn/${pname}";
+            license = lib.licenses.asl20;
+            platforms = lib.platforms.linux ++ lib.platforms.darwin;
+          };
+        };
 
       # One package per executable, sharing its repository's build.
       mkBinary =
@@ -116,6 +122,8 @@ in
     {
       _module.args.buildbarnBinaries = binPkgs;
 
+      overlayAttrs.buildbarn = config.packages;
+
       packages =
         repoPkgs
         // binPkgs
@@ -128,7 +136,7 @@ in
 
       apps = lib.mapAttrs (name: pkg: {
         type = "app";
-        program = lib.getExe pkg;
+        program = pkg;
         meta.description = "Buildbarn ${name}";
       }) binPkgs;
     };

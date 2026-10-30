@@ -19,10 +19,8 @@
       smoke =
         name: pkg:
         pkgs.runCommand "smoke-${name}" { } ''
-          set +e
-          ${lib.getExe pkg} > out 2>&1
-          status=$?
-          set -e
+          status=0
+          ${lib.getExe pkg} > out 2>&1 || status=$?
           cat out
           [ $status -eq 1 ]
           grep -qF '${expected name}' out

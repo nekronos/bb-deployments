@@ -13,6 +13,5 @@
           pkgs.grpcurl
         ];
       };
-      formatter = pkgs.nixfmt-tree;
     };
 }
