@@ -4,5 +4,7 @@
   "bb-clientd": "sha256-dsF6ib515+mubs5CcNWMprJ39WUt7TYR3A3utSs2M6Y=",
   "bb-remote-execution": "sha256-Dy0AUJEfZK8A/2ThlqLiaeDW4YhdMo6S9TLlZS9c6RU=",
   "bb-storage": "sha256-ubyyd9bpYLA6heCk1M6QQglBVTzjdPWGMDnTl5Hz9Tc=",
-  "go": null
+  "go": {
+    "1.27.1": "sha256-TkCKuuEm2Ra2FkYnGT8sVPDjyhMS1pO4bbRfhiqyOLE="
+  }
 }

@@ -12,11 +12,12 @@ nix develop                     # go, jsonnet, grpcurl
 ```
 
 Systems: `x86_64-linux`, `aarch64-linux`, `aarch64-darwin`. Only
-`x86_64-linux` is built and checked; the others evaluate, and every
-executable cross-compiles for darwin with `GOOS=darwin`.
+`x86_64-linux` is built and checked; the others evaluate.
 
 Other flakes consume it through `packages.<system>.<name>` or
-`overlays.default`, which adds `pkgs.buildbarn.<name>`.
+`overlays.default`, which adds `pkgs.buildbarn.<name>` built with the
+consumer's nixpkgs. To share one nixpkgs with `packages`, set
+`inputs.<name>.inputs.nixpkgs.follows = "nixpkgs"`.
 
 ## Outputs
 
@@ -38,8 +39,13 @@ its Bazel build produces.
 
 `bb-storage` and `bb-remote-execution` follow the `git_override` commits
 in `MODULE.bazel`. The other repositories are not pinned there; each uses
-its newest commit whose `go.mod` requires a bb-storage no newer than the
-pinned one.
+its newest commit whose `go.mod` requires a bb-storage and a
+bb-remote-execution no newer than the pinned ones.
+
+Each executable links the Buildbarn modules its own `go.mod` names, not
+the pinned inputs. For bb-remote-execution's bb-storage the two are the
+same commit; `update.sh` fails otherwise. The other repositories link
+older ones.
 
 The Go module patches `MODULE.bazel` applies through
 `go_deps.module_override` (`service-registrar.diff` on the bytestream
@@ -55,7 +61,7 @@ nix/update.sh      # inputs from MODULE.bazel, lock, nix/hashes.json
 nix flake check
 ```
 
-`nix flake update nixpkgs` bumps the toolchain. `nix/toolchain.nix` picks
-nixpkgs' `go_X_Y` for the highest `go` directive among the sources and
-fetches the exact release only if nixpkgs lags it; `update.sh` records
-that tarball's hash in `nix/hashes.json`.
+`nix flake update nixpkgs` bumps the toolchain. `nix/toolchain.nix` needs
+the highest `go` directive among the sources. It takes nixpkgs' `go` if
+recent enough, else `go_X_Y`, else `go_X_Y` with the exact release, whose
+tarball hash `update.sh` records in `nix/hashes.json` on every run.
